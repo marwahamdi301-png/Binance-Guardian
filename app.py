@@ -1,43 +1,58 @@
 import streamlit as st
 from binance.client import Client
 
-st.set_page_config(page_title="Binance Tracker", page_icon="💰")
-st.title("💰 محفظتي: سبوت + تمويل")
+# 1. إعدادات الصفحة
+st.set_page_config(page_title="Binance Pro Bot", page_icon="⚡")
+st.title("⚡ بوت بينانس الشامل والمُتداول")
 
 try:
     api_key = st.secrets["BINANCE_API_KEY"]
     api_secret = st.secrets["BINANCE_SECRET_KEY"]
-    
     client = Client(api_key, api_secret)
     client.API_URL = 'https://api.binance.me/api'
 
-    # 1. جلب أرصدة السبوت
-    spot_assets = client.get_account()['balances']
+    # --- القسم الأول: رصد شامل للمحافظ ---
+    st.header("🔍 الرصد الشامل للأرصدة")
     
-    # 2. جلب أرصدة التمويل (Funding)
-    funding_assets = client.get_funding_asset()
-
-    st.write("### 📊 النتائج التي عثرنا عليها:")
+    # محفظة السبوت
+    spot = client.get_account()['balances']
+    # محفظة التمويل
+    funding = client.get_funding_asset()
     
-    found = False
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("📍 Spot")
+        for a in spot:
+            if float(a['free']) > 0.00001:
+                st.write(f"**{a['asset']}**: {a['free']}")
+    
+    with col2:
+        st.subheader("💳 Funding")
+        for a in funding:
+            if float(a['free']) > 0.00001:
+                st.write(f"**{a['asset']}**: {a['free']}")
 
-    # فحص أرصدة السبوت
-    for asset in spot_assets:
-        free = float(asset['free'])
-        if free > 0.00000001:
-            st.success(f"**{asset['asset']}** (في السبوت): {free:,.8f}")
-            found = True
+    # --- القسم الثاني: لوحة التداول ---
+    st.divider()
+    st.header("🛒 تنفيذ صفقات سريعة")
+    
+    symbol = st.text_input("اسم الزوج (مثال: BTCUSDT)", "BTCUSDT").upper()
+    side = st.selectbox("نوع العملية", ["BUY", "SELL"])
+    quantity = st.number_input("الكمية", min_value=0.0)
 
-    # فحص أرصدة التمويل
-    for asset in funding_assets:
-        free = float(asset['free'])
-        if free > 0.00000001:
-            st.info(f"**{asset['asset']}** (في التمويل): {free:,.8f}")
-            found = True
-            
-    if not found:
-        st.warning("⚠️ لم يتم العثور على مبالغ في السبوت أو التمويل. تأكد من مكان عملاتك في تطبيق بينانس.")
+    if st.button("تنفيذ الأمر الآن 🚀"):
+        if quantity > 0:
+            try:
+                if side == "BUY":
+                    order = client.order_market_buy(symbol=symbol, quantity=quantity)
+                else:
+                    order = client.order_market_sell(symbol=symbol, quantity=quantity)
+                st.balloons()
+                st.success(f"تم تنفيذ العملية بنجاح! رقم الأمر: {order['orderId']}")
+            except Exception as e:
+                st.error(f"فشل التداول: {e}")
+        else:
+            st.warning("يرجى تحديد كمية صحيحة")
 
 except Exception as e:
-    st.error(f"⚠️ خطأ: {e}")
-    st.info("تأكد من تفعيل صلاحيات القراءة في الـ API.")
+    st.error(f"⚠️ فشل الاتصال: {e}")
