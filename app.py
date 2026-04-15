@@ -1,24 +1,24 @@
 import streamlit as st
 from binance.client import Client
 
+# 1. إعدادات الصفحة (تأكد من كتابة st. قبل الأوامر)
 st.set_page_config(page_title="Binance Guardian", page_icon="💰")
 st.title("💰 حسابك الحقيقي")
 
 try:
-    # جلب المفاتيح من الأسرار
+    # 2. جلب المفاتيح من الأسرار (Secrets)
     api_key = st.secrets["BINANCE_API_KEY"]
     api_secret = st.secrets["BINANCE_SECRET_KEY"]
     
-      # إنشاء الاتصال مع تجاوز الحظر الجغرافي
+    # 3. إنشاء الاتصال وتغيير الرابط لتجاوز الحظر الجغرافي
     client = Client(api_key, api_secret)
     client.API_URL = 'https://api.binance.me/api'
 
-
-    # جلب معلومات الحساب والأرصدة
+    # 4. جلب معلومات الحساب والأرصدة
     account = client.get_account()
     balances = account['balances']
 
-    st.write("### 📊 قائمة عملاتك وأرصدتها:")
+    st.write("### 📊 قائمة عملاتك وأرصدتها الحالية:")
     
     found = False
     for b in balances:
@@ -29,9 +29,9 @@ try:
             found = True
             
     if not found:
-        st.warning("لا توجد أرصدة حالية في المحفظة.")
+        st.warning("لا توجد أرصدة حالية في محفظة السبوت (Spot).")
 
 except Exception as e:
-    st.error(f"⚠️ خطأ تقني من بينانس: {e}")
-    st.info("انسخ النص الذي ظهر بالأعلى وأرسله لي فوراً.")
-
+    # كشف الخطأ الحقيقي إذا وجد
+    st.error(f"⚠️ حدث خطأ تقني: {e}")
+    st.info("تأكد من صحة المفاتيح وصلاحيات الـ API في بينانس.")
