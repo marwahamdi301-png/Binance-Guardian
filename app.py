@@ -1,21 +1,13 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
+from binance.client import Client
 
-# إعداد واجهة المستخدم
-st.set_page_config(page_title="Binance AI Guardian", page_icon="🛡️", layout="wide")
-st.title("🛡️ Binance AI Guardian - Dashboard")
+st.title("💰 حسابك الحقيقي")
 
-# بيانات محاكاة للجماليات
-col1, col2, col3 = st.columns(3)
-col1.metric("Current Balance", "$1,250.75", "+1.2%")
-col2.metric("24h Profit", "+$15.20", "5.4%")
-col3.metric("Active Trades", "3")
-
-st.divider()
-
-st.subheader("📈 Market Analysis (Simulation)")
-chart_data = pd.DataFrame(np.random.randn(20, 3), columns=['BTC', 'ETH', 'SOL'])
-st.line_chart(chart_data)
-
-st.info("💡 Next Step: Connect your real Binance API via Streamlit Secrets.")
+try:
+    api_key = st.secrets["BINANCE_API_KEY"]
+    api_secret = st.secrets["BINANCE_SECRET_KEY"]
+    client = Client(api_key, api_secret)
+    asset = client.get_asset_balance(asset='USDT')
+    st.success(f"الرصيد: {asset['free']} USDT")
+except Exception as e:
+    st.error("تأكد من المفاتيح في Secrets")
