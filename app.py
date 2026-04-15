@@ -9,7 +9,10 @@ try:
     api_key = st.secrets["BINANCE_API_KEY"]
     api_secret = st.secrets["BINANCE_SECRET_KEY"]
     
+      # إنشاء الاتصال مع تجاوز الحظر الجغرافي
     client = Client(api_key, api_secret)
+    client.API_URL = 'https://api.binance.me/api'
+
 
     # جلب معلومات الحساب والأرصدة
     account = client.get_account()
