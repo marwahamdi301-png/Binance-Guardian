@@ -1,58 +1,64 @@
 import streamlit as st
 from binance.client import Client
 
-# 1. إعدادات الصفحة
-st.set_page_config(page_title="Binance Pro Bot", page_icon="⚡")
-st.title("⚡ بوت بينانس الشامل والمُتداول")
+# إعداد واجهة البوت الاحترافية
+st.set_page_config(page_title="Binance Mega Bot", page_icon="⚡", layout="wide")
+st.title("⚡ بوت جمال الشامل: رصد + تداول آلي")
 
 try:
+    # 1. جلب المفاتيح
     api_key = st.secrets["BINANCE_API_KEY"]
     api_secret = st.secrets["BINANCE_SECRET_KEY"]
-    client = Client(api_key, api_secret)
-    client.API_URL = 'https://api.binance.me/api'
-
-    # --- القسم الأول: رصد شامل للمحافظ ---
-    st.header("🔍 الرصد الشامل للأرصدة")
     
-    # محفظة السبوت
+    # 2. تجاوز الحظر الجغرافي (استخدام سيرفرات بديلة)
+    client = Client(api_key, api_secret)
+    # جربنا .me وسنضيف محاولة للاتصال المباشر عبر السيرفرات الاحتياطية
+    client.API_URL = 'https://api1.binance.com/api' 
+
+    # --- القسم الأول: الرصد الشامل لكل المحافظ ---
+    st.header("🔍 كشف أرصدتك في كل مكان")
+    
+    # جلب أرصدة السبوت والتمويل والأرباح (Earn)
     spot = client.get_account()['balances']
-    # محفظة التمويل
     funding = client.get_funding_asset()
     
     col1, col2 = st.columns(2)
     with col1:
-        st.subheader("📍 Spot")
+        st.subheader("📍 محفظة التداول (Spot)")
         for a in spot:
-            if float(a['free']) > 0.00001:
-                st.write(f"**{a['asset']}**: {a['free']}")
-    
+            if float(a['free']) > 0:
+                st.success(f"**{a['asset']}**: {a['free']}")
+                
     with col2:
-        st.subheader("💳 Funding")
+        st.subheader("💳 محفظة التمويل والأرباح")
         for a in funding:
-            if float(a['free']) > 0.00001:
-                st.write(f"**{a['asset']}**: {a['free']}")
+            if float(a['free']) > 0:
+                st.info(f"**{a['asset']}**: {a['free']}")
 
-    # --- القسم الثاني: لوحة التداول ---
+    # --- القسم الثاني: لوحة التداول الذكي ---
     st.divider()
-    st.header("🛒 تنفيذ صفقات سريعة")
+    st.header("🤖 تنفيذ صفقات تداول آلي")
     
-    symbol = st.text_input("اسم الزوج (مثال: BTCUSDT)", "BTCUSDT").upper()
-    side = st.selectbox("نوع العملية", ["BUY", "SELL"])
-    quantity = st.number_input("الكمية", min_value=0.0)
+    col_a, col_b, col_c = st.columns(3)
+    with col_a:
+        symbol = st.text_input("زوج التداول", "PEPEUSDT").upper()
+    with col_b:
+        side = st.selectbox("نوع العملية", ["BUY", "SELL"])
+    with col_c:
+        qty = st.number_input("الكمية", min_value=0.0, step=0.00001)
 
-    if st.button("تنفيذ الأمر الآن 🚀"):
-        if quantity > 0:
-            try:
-                if side == "BUY":
-                    order = client.order_market_buy(symbol=symbol, quantity=quantity)
-                else:
-                    order = client.order_market_sell(symbol=symbol, quantity=quantity)
-                st.balloons()
-                st.success(f"تم تنفيذ العملية بنجاح! رقم الأمر: {order['orderId']}")
-            except Exception as e:
-                st.error(f"فشل التداول: {e}")
-        else:
-            st.warning("يرجى تحديد كمية صحيحة")
+    if st.button("تنفيذ الصفقة الآن 🚀"):
+        try:
+            if side == "BUY":
+                order = client.order_market_buy(symbol=symbol, quantity=qty)
+            else:
+                order = client.order_market_sell(symbol=symbol, quantity=qty)
+            st.balloons()
+            st.success(f"تمت العملية بنجاح! رقم الطلب: {order['orderId']}")
+        except Exception as e:
+            st.error(f"فشل التداول: {e}")
 
 except Exception as e:
-    st.error(f"⚠️ فشل الاتصال: {e}")
+    # حل مشكلة الموقع المقيد برمجياً
+    st.error(f"❌ خطأ الاتصال: {e}")
+    st.warning("بينانس ترفض الاتصال من سيرفر Streamlit. يرجى تفعيل VPN على جهازك وإعادة المحاولة أو تغيير API_URL في الكود.")
