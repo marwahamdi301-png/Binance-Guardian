@@ -1,51 +1,46 @@
 import streamlit as st
 from binance.client import Client
-import os
+import pandas as pd
 
-st.set_page_config(page_title="Binance Mega Bot", page_icon="⚡")
-st.title("⚡ بوت جمال الشامل: رصد + تداول")
+# إعدادات الصفحة
+st.set_page_config(page_title="Jamal Portfolio", page_icon="💰", layout="wide")
+
+st.title("📊 منصة جمال لإدارة المحفظة")
+st.markdown("---")
+
+# مفاتيحك التي نجحت في الاختبار
+API_KEY = 'zNQJ1G5kGqnwSKDZin6he1GN8lW2NG6yZE0WpHsplK2SQkr01ixcE20EVMZBAWxM'
+API_SECRET = 'gOH05NN1Pxfspq1nGIoviVPE6SjGX7uRVVv5mq4XXANcv1AKH6pnA4EnmcdNn68U'
 
 try:
-    # 1. جلب المفاتيح
-    api_key = st.secrets["BINANCE_API_KEY"]
-    api_secret = st.secrets["BINANCE_SECRET_KEY"]
+    client = Client(API_KEY, API_SECRET)
     
-    # 2. إعداد الاتصال باستخدام سيرفرات بديلة متعددة
-    # سنحاول تجربة رابط السيرفر الأمريكي أو السيرفرات الاحتياطية
-    client = Client(api_key, api_secret)
+    # جلب البيانات
+    acc = client.get_account()
+    spot_data = [{"Asset": b['asset'], "Free": float(b['free'])} for b in acc['balances'] if float(b['free']) > 0]
     
-    # جرب تغيير هذا الرابط في كل مرة إذا استمر الخطأ:
-    # خيار 1: https://api.binance.us/api (لأمريكا)
-    # خيار 2: https://api1.binance.com/api
-    # خيار 3: https://api2.binance.com/api
-    client.API_URL = 'https://api3.binance.com/api' 
+    # عرض الأرصدة في كروت أنيقة
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("💰 أرصدة التداول (Spot)")
+        if spot_data:
+            df_spot = pd.DataFrame(spot_data)
+            st.dataframe(df_spot, use_container_width=True)
+        else:
+            st.write("لا توجد أرصدة حالياً")
 
-    # محاولة جلب الحالة للتأكد من الاتصال
-    status = client.get_system_status()
-    if status['status'] == 0:
-        st.success("✅ تم كسر الحصار! البوت متصل الآن.")
+    with col2:
+        st.subheader("📥 أرصدة التمويل (Funding)")
+        funding = client.get_user_asset()
+        funding_data = [{"Asset": f['asset'], "Free": float(f['free'])} for f in funding if float(f['free']) > 0]
+        if funding_data:
+            df_funding = pd.DataFrame(funding_data)
+            st.table(df_funding)
+        else:
+            st.write("المحفظة فارغة")
 
-    # --- عرض الأرصدة (البحث الشامل) ---
-    spot = client.get_account()['balances']
-    funding = client.get_funding_asset()
-    
-    for a in spot:
-        if float(a['free']) > 0.00001:
-            st.write(f"🟢 **{a['asset']} (Spot)**: {a['free']}")
-            
-    for a in funding:
-        if float(a['free']) > 0.00001:
-            st.write(f"🔵 **{a['asset']} (Funding)**: {a['free']}")
-
-    # --- لوحة التداول ---
-    st.divider()
-    symbol = st.text_input("الزوج", "PEPEUSDT").upper()
-    qty = st.number_input("الكمية", min_value=0.0)
-    
-    if st.button("شراء الآن 🚀"):
-        order = client.order_market_buy(symbol=symbol, quantity=qty)
-        st.success("تم الشراء!")
+    st.success("✅ تم تحديث البيانات مباشرة من بينانس")
 
 except Exception as e:
-    st.error(f"❌ بينانس لا تزال ترفض السيرفر: {e}")
-    st.info("يا جمال، الحل النهائي هو تشغيل هذا الكود على (كمبيوترك الشخصي) وليس على Streamlit Cloud، لأن بينانس تحظر السيرفرات السحابية.")
+    st.error(f"حدث خطأ في الاتصال: {e}")
